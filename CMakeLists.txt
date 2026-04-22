@@ -32,7 +32,7 @@ set(REQUIRES
     esp-tls
     esp_websocket_client
 
-    esp_log
+    log
 )
 
 
