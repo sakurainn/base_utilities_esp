@@ -86,7 +86,7 @@ class WebsocketClient {
    * @return true 初始化成功，false 失败
    */
   bool connect(const char* url, bool auto_reconnect = false,
-               uint32_t reconnect_delay_ms = 5000) {
+               uint32_t reconnect_delay_ms = 5000,const char *subprotocol="") {
     if (m_client != nullptr) {
       disconnect();
     }
@@ -100,7 +100,10 @@ class WebsocketClient {
     config.crt_bundle_attach = esp_crt_bundle_attach;
     config.reconnect_timeout_ms = m_reconnect_delay_ms;
     config.network_timeout_ms = 10 * 1000;
-
+    if(subprotocol!=nullptr&&subprotocol[0]!='\0')
+{
+  config.subprotocol=subprotocol;
+}
     m_client = esp_websocket_client_init(&config);
     if (m_client == nullptr) {
       return false;
