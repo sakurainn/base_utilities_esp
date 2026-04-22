@@ -31,6 +31,8 @@ set(REQUIRES
     esp_timer
     esp-tls
     esp_websocket_client
+
+    esp_log
 )
 
 
