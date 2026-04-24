@@ -39,9 +39,9 @@ set(REQUIRES
 
 idf_component_register(
     SRCS ${SOURCES}
-    INCLUDE_DIRS "include" "deps"  "deps/esp_event_cxx" "deps/magic_enum"
+    INCLUDE_DIRS "include" "deps"  "deps/esp_event_cxx" "deps/magic_enum"  "deps/preferences"
     REQUIRES ${REQUIRES}
     PRIV_INCLUDE_DIRS "deps/wifi/include" "deps/simple_uuid" "deps/" "deps/flashdb/include" "deps/ticker"
     
-        "deps/preferences"
+       
 )
