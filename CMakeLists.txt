@@ -33,6 +33,7 @@ set(REQUIRES
     esp_websocket_client
 
     log
+    json
 )
 
 

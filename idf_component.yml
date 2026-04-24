@@ -2,5 +2,4 @@ version: 0.1.0
 description: Utilities - UNIX file handle, KVDB (NVS/Flashdb), FreeRTOS delay executor
 dependencies:
   idf: ">=4.4"
-  bblanchon/arduinojson: "^7.4.3"
   espressif/esp_websocket_client: '^1.6.1'

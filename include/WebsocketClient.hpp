@@ -1,6 +1,7 @@
 #pragma once
 
 #include <esp_crt_bundle.h>
+#include <esp_log.h>
 #include <esp_websocket_client.h>
 #include <esp_wifi.h>
 
@@ -8,7 +9,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include<esp_log.h>
+
 #include "DelayExec.hpp"
 
 /**
@@ -33,9 +34,16 @@
  *       printf("websocket disconnected!\n");
  *   });
  *
- *   client.on_message([](const char* data, size_t len){
+ *   client.on_message([](ws_transport_opcodes_t opcode,
+ *                       const char* data, size_t len){
  *       printf("received: %.*s\n", (int)len, data);
  *   });
+ *
+ *   // 使用自定义服务器证书 (PEM格式)
+ *   extern const char server_pem_start[] asm("_binary_server_pem_start");
+ *   extern const char server_pem_end[] asm("_binary_server_pem_end");
+ *   size_t server_pem_len = server_pem_end - server_pem_start;
+ *   client.set_server_cert(server_pem_start, server_pem_len);
  *
  *   // 连接到服务器
  *   client.connect("wss://echo.websocket.events");
@@ -86,7 +94,8 @@ class WebsocketClient {
    * @return true 初始化成功，false 失败
    */
   bool connect(const char* url, bool auto_reconnect = false,
-               uint32_t reconnect_delay_ms = 5000,const char *subprotocol="") {
+               uint32_t reconnect_delay_ms = 5000,
+               const char* subprotocol = "") {
     if (m_client != nullptr) {
       disconnect();
     }
@@ -97,13 +106,21 @@ class WebsocketClient {
 
     esp_websocket_client_config_t config = {};
     config.uri = url;
-    config.crt_bundle_attach = esp_crt_bundle_attach;
     config.reconnect_timeout_ms = m_reconnect_delay_ms;
     config.network_timeout_ms = 10 * 1000;
-    if(subprotocol!=nullptr&&subprotocol[0]!='\0')
-{
-  config.subprotocol=subprotocol;
-}
+    if (subprotocol != nullptr && subprotocol[0] != '\0') {
+      config.subprotocol = subprotocol;
+    }
+
+    // 如果设置了自定义服务器证书，使用它
+    if (!m_server_cert.empty()) {
+      config.cert_pem = m_server_cert.c_str();
+      config.crt_bundle_attach = nullptr;
+    } else {
+      // 默认使用esp_crt_bundle
+      config.crt_bundle_attach = esp_crt_bundle_attach;
+    }
+
     m_client = esp_websocket_client_init(&config);
     if (m_client == nullptr) {
       return false;
@@ -295,6 +312,40 @@ class WebsocketClient {
    */
   esp_websocket_client_handle_t handle() { return m_client; }
 
+  /**
+   * @brief 设置自定义服务器证书 (PEM格式)
+   * @param cert_pem PEM格式的证书数据，包含-----BEGIN CERTIFICATE-----和-----END CERTIFICATE-----
+   * @note 证书数据会被复制保存，调用connect后生效
+   */
+  void set_server_cert(const char* cert_pem) {
+    if (cert_pem) {
+      m_server_cert = cert_pem;
+    } else {
+      m_server_cert.clear();
+    }
+  }
+
+  /**
+   * @brief 设置自定义服务器证书 (PEM格式)，指定长度
+   * @param cert_pem PEM格式的证书数据指针
+   * @param len 证书数据长度
+   * @note 证书数据会被复制保存，调用connect后生效
+   */
+  void set_server_cert(const char* cert_pem, size_t len) {
+    if (cert_pem && len > 0) {
+      m_server_cert.assign(cert_pem, len);
+    } else {
+      m_server_cert.clear();
+    }
+  }
+
+  /**
+   * @brief 清除自定义服务器证书，恢复使用默认的esp_crt_bundle
+   */
+  void clear_server_cert() {
+    m_server_cert.clear();
+  }
+
  private:
   static void websocket_event_handler(void* handler_args, esp_event_base_t base,
                                       int32_t event_id, void* event_data) {
@@ -359,4 +410,5 @@ class WebsocketClient {
   DisconnectedCallback m_disconnected_callback;
   MessageCallback m_message_callback;
   ErrorCallback m_error_callback;
+  std::string m_server_cert;
 };
