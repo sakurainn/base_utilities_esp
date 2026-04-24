@@ -45,6 +45,9 @@
  *   size_t server_pem_len = server_pem_end - server_pem_start;
  *   client.set_server_cert(server_pem_start, server_pem_len);
  *
+ *   // 对于自签名证书，通常需要跳过Common Name检查
+ *   client.set_skip_cert_common_name_check(true);
+ *
  *   // 连接到服务器
  *   client.connect("wss://echo.websocket.events");
  *
@@ -71,7 +74,8 @@ class WebsocketClient {
       : m_client(nullptr),
         m_connected(false),
         m_auto_reconnect(false),
-        m_reconnect_delay_ms(5000) {}
+        m_reconnect_delay_ms(5000),
+        m_skip_cert_common_name_check(false) {}
 
   /**
    * @brief 析构函数，自动断开连接
@@ -121,6 +125,9 @@ class WebsocketClient {
       // 默认使用esp_crt_bundle
       config.crt_bundle_attach = esp_crt_bundle_attach;
     }
+
+    // 设置是否跳过证书Common Name检查
+    config.skip_cert_common_name_check = m_skip_cert_common_name_check;
 
     m_client = esp_websocket_client_init(&config);
     if (m_client == nullptr) {
@@ -347,6 +354,15 @@ class WebsocketClient {
     m_server_cert.clear();
   }
 
+  /**
+   * @brief 设置是否跳过证书Common Name检查
+   * @param skip true 跳过检查，false 启用检查
+   * @note 对于自签名证书通常需要跳过检查，调用connect后生效
+   */
+  void set_skip_cert_common_name_check(bool skip) {
+    m_skip_cert_common_name_check = skip;
+  }
+
  private:
   static void websocket_event_handler(void* handler_args, esp_event_base_t base,
                                       int32_t event_id, void* event_data) {
@@ -412,4 +428,5 @@ class WebsocketClient {
   MessageCallback m_message_callback;
   ErrorCallback m_error_callback;
   std::string m_server_cert;
+  bool m_skip_cert_common_name_check;
 };
