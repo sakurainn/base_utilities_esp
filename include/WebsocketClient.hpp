@@ -115,7 +115,7 @@ class WebsocketClient {
     // 如果设置了自定义服务器证书，使用它
     if (!m_server_cert.empty()) {
       config.cert_pem = m_server_cert.c_str();
-      config.client_cert_len = m_server_cert.size();
+      config.cert_len = m_server_cert.size();
       config.crt_bundle_attach = nullptr;
     } else {
       // 默认使用esp_crt_bundle
